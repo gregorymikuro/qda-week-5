@@ -1,97 +1,61 @@
-## Week 5 Formative Assessment: Job Survey Analysis
-## Gregory Antony Mikuro
+## Week 5 Formative Assessment
 
-The main aims are to:
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 7,
+  fig.height = 4
+)
 
-1. identify the level of measurement of `absence`;
-2. explain test-retest reliability;
-3. assess the internal consistency of the job-autonomy items; and
-4. classify the variables in the questions about alcohol consumption.
+options(scipen = 999)
 
-# Install required packages
-
-Run this chunk once if the packages are not already installed. After installation, change `eval=FALSE` back to `eval=FALSE` before knitting the final report.
-
-```{r install-packages, eval=FALSE}
-install.packages("ggplot2")
-install.packages("psych")
-install.packages("knitr")
-```
-
-
-
-
-# Load required packages
-
-```{r setup, message=FALSE, warning=FALSE}
 library(ggplot2)
 library(psych)
 library(knitr)
-
-# Make tables easier to read
-options(scipen = 999)
 ```
-
 
 
 
 # Import the data
 
-The CSV file is stored in the `data` folder inside the project folder.
-
 ```{r import-data}
-# Read the Job Survey data
+# Read the CSV from the root folder
 job_data <- read.csv("data/job_survey_data.csv")
 
-# Show the first six rows
 head(job_data)
 ```
 
 
 
-
 # Check the data
 
-Before carrying out the analysis, the dataset is checked for its size, variable names, missing values and duplicate rows.
-
 ```{r check-data}
-# Number of rows and columns
-cat("Number of rows:", nrow(job_data), "\n")
-cat("Number of columns:", ncol(job_data), "\n\n")
+# Check the dataset
+cat("Rows:", nrow(job_data), "\n")
+cat("Columns:", ncol(job_data), "\n")
+cat("Missing values:", sum(is.na(job_data)), "\n")
+cat("Duplicate rows:", sum(duplicated(job_data)), "\n")
 
-# Variable names
 names(job_data)
 ```
-
-```{r data-structure}
-# Check the structure and data types
-str(job_data)
-```
-
-```{r missing-and-duplicates}
-# Count missing values in each variable
-missing_values <- data.frame(
-  Variable = names(job_data),
-  Missing = colSums(is.na(job_data))
-)
-
-kable(missing_values, caption = "Missing values in the dataset")
-
-# Count duplicate rows
-cat("Number of duplicate rows:", sum(duplicated(job_data)))
-```
-
 
 
 
 # Question 1: The absence variable
 
-## Descriptive statistics
-
 ```{r absence-summary}
-# Calculate descriptive statistics for absence
+# Summarise absence
 absence_summary <- data.frame(
-  Statistic = c("Valid cases", "Mean", "Median", "Standard deviation", "Minimum", "Maximum"),
+  Statistic = c(
+    "Valid cases",
+    "Mean",
+    "Median",
+    "Standard deviation",
+    "Minimum",
+    "Maximum"
+  ),
   Value = c(
     sum(!is.na(job_data$absence)),
     mean(job_data$absence, na.rm = TRUE),
@@ -102,46 +66,41 @@ absence_summary <- data.frame(
   )
 )
 
-kable(absence_summary, digits = 2, caption = "Descriptive statistics for absence")
+kable(
+  absence_summary,
+  digits = 2,
+  caption = "Descriptive statistics for absence"
+)
 ```
-
-
-
-
-## Frequency table
 
 ```{r absence-frequency}
-# Create a frequency table for absence
-absence_frequency <- as.data.frame(table(job_data$absence, useNA = "ifany"))
+# Create the frequency table
+absence_frequency <- as.data.frame(
+  table(job_data$absence, useNA = "ifany")
+)
+
 names(absence_frequency) <- c("Absence", "Frequency")
 
-kable(absence_frequency, caption = "Frequency distribution of absence")
+kable(
+  absence_frequency,
+  caption = "Frequency distribution of absence"
+)
 ```
 
-
-
-
-## Histogram
-
-```{r absence-histogram, fig.width=7, fig.height=4}
-# Show the distribution of absence
-ggplot(job_data, aes(x = absence)) +
-  geom_histogram(bins = 10, fill = "steelblue", colour = "black") +
+```{r absence-frequency-plot}
+# Plot the absence frequencies
+ggplot(absence_frequency, aes(x = factor(Absence), y = Frequency)) +
+  geom_col(fill = "steelblue", colour = "black") +
   labs(
-    title = "Distribution of Employee Absence",
+    title = "Frequency of Employee Absence",
     x = "Absence",
-    y = "Frequency"
+    y = "Number of employees"
   ) +
   theme_minimal()
 ```
 
-
-
-
-## Box plot
-
-```{r absence-boxplot, fig.width=6, fig.height=4}
-# Check the spread and possible unusual values
+```{r absence-boxplot}
+# Check the value 99
 ggplot(job_data, aes(y = absence)) +
   geom_boxplot(fill = "lightblue") +
   labs(
@@ -152,63 +111,74 @@ ggplot(job_data, aes(y = absence)) +
   theme_minimal()
 ```
 
+```{r absence-sensitivity}
+# Compare results with and without 99
+absence_without_99 <- job_data$absence[job_data$absence != 99]
+
+absence_sensitivity <- data.frame(
+  Analysis = c("All values", "Value 99 excluded"),
+  N = c(
+    length(job_data$absence),
+    length(absence_without_99)
+  ),
+  Mean = c(
+    mean(job_data$absence),
+    mean(absence_without_99)
+  ),
+  Median = c(
+    median(job_data$absence),
+    median(absence_without_99)
+  ),
+  SD = c(
+    sd(job_data$absence),
+    sd(absence_without_99)
+  ),
+  Maximum = c(
+    max(job_data$absence),
+    max(absence_without_99)
+  )
+)
+
+kable(
+  absence_sensitivity,
+  digits = 2,
+  caption = "Sensitivity analysis for absence"
+)
+```
+
+
+
+The value 99 should only be recoded after checking the codebook.
+
+# Question 2: Test-retest reliability
+
+Test-retest reliability is external reliability because the same measure is compared across separate occasions. The Job Survey does not contain repeated administrations, so no test-retest coefficient is calculated.
+
+# Question 3: Cronbach's alpha for autonomy
+
 ```{r select-autonomy}
-# Select the four job-autonomy items
-autonomy_data <- job_data[c("autonom1", "autonom2", "autonom3", "autonom4")]
+# Select the autonomy items
+autonom <- job_data[
+  c("autonom1", "autonom2", "autonom3", "autonom4")
+]
 
-head(autonomy_data)
+str(autonom)
+summary(autonom)
+colSums(is.na(autonom))
 ```
 
 
 
+The item wording is not available in the CSV. `check.keys = TRUE` is used as a diagnostic only. Reverse scoring should be confirmed from the questionnaire.
 
-## Check the autonomy values
+```{r autonomy-distributions}
+# Reshape the autonomy items
+long_autonom <- stack(autonom)
+names(long_autonom) <- c("Score", "Item")
 
-```{r check-autonomy-values}
-# Display the minimum and maximum for each item
-range_check <- data.frame(
-  Item = names(autonomy_data),
-  Minimum = sapply(autonomy_data, min, na.rm = TRUE),
-  Maximum = sapply(autonomy_data, max, na.rm = TRUE),
-  Missing = colSums(is.na(autonomy_data))
-)
-
-kable(range_check, caption = "Range and missing-value check for autonomy items")
-```
-
-
-
-
-
-## Descriptive statistics
-
-```{r autonomy-descriptives}
-# Calculate simple descriptive statistics for each item
-autonomy_summary <- data.frame(
-  Item = names(autonomy_data),
-  Mean = sapply(autonomy_data, mean, na.rm = TRUE),
-  SD = sapply(autonomy_data, sd, na.rm = TRUE),
-  Median = sapply(autonomy_data, median, na.rm = TRUE),
-  Minimum = sapply(autonomy_data, min, na.rm = TRUE),
-  Maximum = sapply(autonomy_data, max, na.rm = TRUE)
-)
-
-kable(autonomy_summary, digits = 2, caption = "Descriptive statistics for autonomy items")
-```
-
-
-
-
-## Autonomy item plots
-
-```{r autonomy-plots, fig.width=8, fig.height=6}
-# Reshape the data for plotting using base R
-long_autonomy <- stack(autonomy_data)
-names(long_autonomy) <- c("Score", "Item")
-
-# Plot the frequency distribution of each item
-ggplot(long_autonomy, aes(x = Score)) +
-  geom_histogram(binwidth = 1, boundary = 0.5, fill = "steelblue", colour = "black") +
+# Plot the item distributions
+ggplot(long_autonom, aes(x = factor(Score))) +
+  geom_bar(fill = "steelblue", colour = "black") +
   facet_wrap(~ Item, ncol = 2) +
   labs(
     title = "Distributions of Job-Autonomy Items",
@@ -218,98 +188,70 @@ ggplot(long_autonomy, aes(x = Score)) +
   theme_minimal()
 ```
 
-```{r autonomy-boxplots, fig.width=7, fig.height=4}
-# Compare the distributions of the autonomy items
-ggplot(long_autonomy, aes(x = Item, y = Score)) +
-  geom_boxplot(fill = "lightblue") +
-  labs(
-    title = "Box Plots of Job-Autonomy Items",
-    x = "Autonomy item",
-    y = "Response score"
-  ) +
-  theme_minimal()
-```
-
-
-
-
-## Correlation matrix
-
 ```{r autonomy-correlations}
-# Calculate correlations between the four items
-# Pairwise complete observations are used if values are missing
-autonomy_correlations <- cor(autonomy_data, use = "pairwise.complete.obs")
-
-kable(autonomy_correlations, digits = 2, caption = "Correlations between autonomy items")
-```
-
-```{r correlation-plot, fig.width=6, fig.height=5}
-# Draw a simple correlation plot
-image(
-  1:4,
-  1:4,
-  autonomy_correlations,
-  axes = FALSE,
-  col = colorRampPalette(c("red", "white", "blue"))(20),
-  zlim = c(-1, 1),
-  main = "Correlation Matrix of Autonomy Items"
+# Calculate item correlations
+autonomy_correlations <- cor(
+  autonom,
+  use = "pairwise.complete.obs"
 )
 
-axis(1, at = 1:4, labels = names(autonomy_data))
-axis(2, at = 1:4, labels = names(autonomy_data), las = 1)
-box()
+kable(
+  autonomy_correlations,
+  digits = 2,
+  caption = "Correlations between autonomy items"
+)
 ```
 
-
-
-
-## Cronbach's alpha
-
 ```{r cronbach-alpha}
-# Remove rows with missing autonomy responses
-autonomy_complete <- na.omit(autonomy_data)
-
 # Calculate Cronbach's alpha
 alpha_result <- psych::alpha(
-  autonomy_complete,
+  autonom,
   check.keys = TRUE,
   warnings = FALSE
 )
 
-# Display the main alpha results
-alpha_table <- data.frame(
-  Measure = c("Raw alpha", "Standardised alpha", "Number of items", "Complete cases"),
+alpha_summary <- data.frame(
+  Statistic = c(
+    "Raw Cronbach's alpha",
+    "Standardised Cronbach's alpha",
+    "Number of items",
+    "Complete cases"
+  ),
   Value = c(
     alpha_result$total$raw_alpha,
     alpha_result$total$std.alpha,
-    ncol(autonomy_complete),
-    nrow(autonomy_complete)
+    ncol(autonom),
+    sum(complete.cases(autonom))
   )
 )
 
-kable(alpha_table, digits = 3, caption = "Cronbach's alpha for the autonomy scale")
+kable(
+  alpha_summary,
+  digits = 3,
+  caption = "Cronbach's alpha for the autonomy scale"
+)
 ```
-
-
-
-
-## Corrected item-total correlations
 
 ```{r item-total-correlations}
-# r.drop is the corrected item-total correlation
+# Extract corrected item-total correlations
 item_total <- data.frame(
   Item = rownames(alpha_result$item.stats),
-  Corrected_Item_Total = alpha_result$item.stats$r.drop
+  Corrected_Item_Total = alpha_result$item.stats$r.drop,
+  row.names = NULL
 )
 
-kable(item_total, digits = 3, caption = "Corrected item-total correlations")
+kable(
+  item_total,
+  digits = 3,
+  caption = "Corrected item-total correlations"
+)
 ```
 
-```{r item-total-plot, fig.width=7, fig.height=4}
-# Plot the corrected item-total correlations
+```{r item-total-plot}
+# Plot corrected item-total correlations
 ggplot(item_total, aes(x = Item, y = Corrected_Item_Total)) +
   geom_col(fill = "steelblue") +
-  geom_hline(yintercept = 0, colour = "black") +
+  geom_hline(yintercept = 0.30, linetype = "dashed") +
   labs(
     title = "Corrected Item-Total Correlations",
     x = "Autonomy item",
@@ -318,23 +260,23 @@ ggplot(item_total, aes(x = Item, y = Corrected_Item_Total)) +
   theme_minimal()
 ```
 
-
-
-
-## Alpha if an item is deleted
-
 ```{r alpha-if-deleted}
-# Extract alpha after removing each item
+# Extract alpha if each item is deleted
 alpha_deleted <- data.frame(
   Item = rownames(alpha_result$alpha.drop),
-  Alpha_If_Deleted = alpha_result$alpha.drop$raw_alpha
+  Alpha_If_Deleted = alpha_result$alpha.drop$raw_alpha,
+  row.names = NULL
 )
 
-kable(alpha_deleted, digits = 3, caption = "Cronbach's alpha if an item is deleted")
+kable(
+  alpha_deleted,
+  digits = 3,
+  caption = "Cronbach's alpha if each item is deleted"
+)
 ```
 
-```{r alpha-deleted-plot, fig.width=7, fig.height=4}
-# Compare alpha if an item is deleted with the overall alpha
+```{r alpha-deleted-plot}
+# Plot alpha if deleted
 overall_alpha <- alpha_result$total$raw_alpha
 
 ggplot(alpha_deleted, aes(x = Item, y = Alpha_If_Deleted)) +
@@ -346,7 +288,7 @@ ggplot(alpha_deleted, aes(x = Item, y = Alpha_If_Deleted)) +
   ) +
   labs(
     title = "Cronbach's Alpha if an Item Is Deleted",
-    subtitle = "The dashed red line is the overall alpha",
+    subtitle = "The dashed line shows the overall alpha",
     x = "Item removed",
     y = "Cronbach's alpha"
   ) +
@@ -355,20 +297,33 @@ ggplot(alpha_deleted, aes(x = Item, y = Alpha_If_Deleted)) +
 
 
 
-# Question 4: Classification of alcohol-consumption variables
+# Question 4: Alcohol-consumption variables
 
-## Question 4(a)
+```{r measurement-levels}
+# Summarise the measurement levels
+measurement_levels <- data.frame(
+  Variable = c(
+    "Ever consumes alcohol: Yes or No",
+    "Drink consumed most frequently",
+    "Frequency of alcohol consumption",
+    "Units consumed in the previous week"
+  ),
+  Level = c(
+    "Dichotomous nominal",
+    "Nominal",
+    "Ordinal",
+    "Ratio"
+  ),
+  Reason = c(
+    "Two unordered categories",
+    "Unordered categories",
+    "Ordered categories with unequal intervals",
+    "Equal units and a meaningful zero"
+  )
+)
 
-"Do you ever consume alcoholic drinks?" is a dichotomous variable because it has only two possible categories: Yes and No.
-
-## Question 4(b)
-
-The type of alcoholic drink consumed most frequently is a nominal variable. Categories such as beer, spirits and wine do not have a natural order.
-
-## Question 4(c)
-
-Frequency of alcohol consumption is an ordinal variable. The response categories can be ordered from less frequent to more frequent consumption, but the gaps between the categories are not equal.
-
-## Question 4(d)
-
-The number of alcohol units consumed during the previous week is a ratio-level variable. It is numerical and has a meaningful zero, because zero means that no units were consumed.
+kable(
+  measurement_levels,
+  caption = "Measurement levels of the alcohol-consumption variables"
+)
+```

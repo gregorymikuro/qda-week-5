@@ -1,0 +1,38 @@
+```{r}
+str(book)
+str(shop)
+
+book <- factor(book, levels = c("romance", "crime", "science fiction"))
+shop <- factor(shop, levels = c("shop1", "shop2"))
+
+book_shop <- table(book, shop)
+book_shop
+prop.table(book_shop, margin = 2)
+
+result <- chisq.test(book_shop)
+result
+result$expected
+result$stdres
+
+# If the expected-count condition is inadequate:
+chisq.test(book_shop, simulate.p.value = TRUE, B = 10000)
+```
+
+```{r}
+library(psych)
+
+autonom <- job_data[
+  c("autonom1", "autonom2", "autonom3", "autonom4")
+]
+
+alpha_result <- psych::alpha(
+  autonom,
+  check.keys = TRUE,
+  warnings = FALSE
+)
+
+alpha_result$total
+alpha_result$keys
+alpha_result$item.stats[, "r.drop", drop = FALSE]
+alpha_result$alpha.drop[, "raw_alpha", drop = FALSE]
+```
